@@ -531,8 +531,23 @@ class CommanderPro(UsbHidDriver):
 
         # The commander pro implements this functionality on an RPM basis.
         # Therefore, we convert fan speeds from pwm to rpm.
+        temperatures = []
+        speeds = []
+        for temperature, pwm in profile:
+            temperatures.append(temperature)
+            speeds.append(pwm * 25)
 
-        
+        # set_speed_graph() expects exactly 6 speeds and temps. We need
+        # to pad out this arrays until we have 6 of each.
+        if len(temperatures) > 0 and len(speeds) > 0:
+            final_temp = temperatures[len(temperatures) - 1]
+            final_speed = speeds[len(speeds) - 1]
+            while len(temperatures) < 6:
+                temperatures.append(final_temp)
+            while len(speeds) < 6:
+                speeds.append(final_speed)
+
+        self.set_speed_graph(0, fan_number, temperatures, speeds)
 
     def set_speed_percent(self, channel, duty):
         """Set channel to a fixed speed duty.
@@ -560,7 +575,7 @@ class CommanderPro(UsbHidDriver):
         """Set channel to a fixed speed duty.
         
         `channel` should be an int in range [0, 5]
-        `duty` should be the speed in rpm (<2500)
+        `duty` should be the speed in pwm (%).
         """
         channel_index = int(channel)
         speed = int(duty)
